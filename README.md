@@ -6,6 +6,6 @@ Nothing yet, check the to-do.
 
 
 To-do:
-- Figure out how to manage data: How to store it/organize it in C++, are we adding more cities. Is information organized by city classes which inside contain local heaps and vectors of climate data?
-- 2 implementations to solve the same task?? Figure out which one. 
-- Qt
+- Implement heap sort and merge sort for data vectors. This will be used for getting the n hottest/coldest days.
+- Provide functionality for the n hottest/coldest days function in the GUI.
+- Make the GUI pretty (colors, icons, different fonts, etc.)
