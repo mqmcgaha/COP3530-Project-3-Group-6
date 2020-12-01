@@ -17,42 +17,6 @@
 #include "Series.h"
 #include "reading.h"
 
-
-
-
-
-
-
- // Need this maybe?
-// struct City
-// {
-//     QString name;
-//     QDate startDate;
-//     QDate endDate;
-//     vector<reading> readings;
-
-//     City(QString name_)
-//     {
-//         name = name_;
-//     }
-//     void insertReading(double temp_, int month_, int day_, int year_)
-//     {
-//         QDate tempDate(year_, month_, day_);
-//         if(readings.size() == 0)
-//             startDate = tempDate;
-
-//        readings.push_back(reading(temp_, tempDate));
-
-
-//     }
-
-// };
-
-
-
-
-
-
 void MainWindow::read()
 {
     std::ifstream file("../fileIONullsDiscardedOnInitialRead/NewData.csv");
@@ -97,8 +61,6 @@ void MainWindow::read()
     }
 
 }
-
-
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -156,8 +118,8 @@ void MainWindow::on_cityBox_currentTextChanged(const QString &city)
 {
     // With the city, must change the available dates
     QString state = ui->stateBox->currentText();
-   std::vector<reading> data = statecityToData[std::make_pair(state, city)];
-    if(data.size() == 0)
+    currentCityData = statecityToData[std::make_pair(state, city)];
+    if(currentCityData.size() == 0)
     {
         ui->labelStartTime->setText("First available: ");
         ui->labelEndTime->setText("Last available: ");
@@ -165,8 +127,8 @@ void MainWindow::on_cityBox_currentTextChanged(const QString &city)
     }
 
 
-   QDate start = data.front().date;
-   QDate end = data.back().date;
+   QDate start = currentCityData.front().date;
+   QDate end = currentCityData.back().date;
 
    QString dateString = start.toString("M/d/yyyy");
    ui->labelStartTime->setText("First available: " + dateString);
@@ -178,8 +140,6 @@ void MainWindow::on_cityBox_currentTextChanged(const QString &city)
    ui->pushButtonFit->setEnabled(false);
 
 }
-
-
 
 void MainWindow::on_pushButtonPlot_clicked()
 {
@@ -222,6 +182,7 @@ void MainWindow::on_pushButtonPlot_clicked()
     }
     // Now create a subsetted vector
     std::vector<reading> subset(currentCityData.begin() + startIndex, currentCityData.begin() + endIndex + 1);
+    currentCitySubset = subset;
 
     // Now treat the data to get it ready to plot. Must turn dates into indices--the x-axis, and set temp to y axis
     QVector<double> x(subset.size());
@@ -257,31 +218,6 @@ void MainWindow::on_pushButtonPlot_clicked()
 
     myPlot->replot();
 
-
-
-//         QVector<double> x(city.length()), y(city.length());
-
-//         for(int i = 0; i < city.length(); i++)
-//         {
-//             x[i] = i;
-//             y[i] = i;
-//         }
-
-//         // add graph and assign data
-//         myPlot->addGraph();
-//         myPlot->graph(0)->setData(x, y);
-
-//         // set labels
-//         myPlot->xAxis->setLabel("x");
-//         myPlot->yAxis->setLabel("y");
-
-//         // set ranges
-//         myPlot->xAxis->setRange(0, 20);
-//         myPlot->yAxis->setRange(0, 20);
-
-//         myPlot->replot();
-
-
     // Enable fitting
     ui->pushButtonFit->setEnabled(true);
 }
@@ -289,45 +225,8 @@ void MainWindow::on_pushButtonPlot_clicked()
 
 void MainWindow::on_pushButtonFit_clicked()
 {
-    // Data
-    QString state = ui->stateBox->currentText();
-    QString city = ui->cityBox->currentText();
-    std::vector<reading> myData = statecityToData[std::make_pair(state, city)];
-    QDate dataBegin = myData.front().date;
-    QDate dataEnd = myData.back().date;
-
-    // User-provided dates
-    QDate selectedStart = ui->dateEditFrom->date();
-    QDate selectedEnd = ui->dateEditTo->date();
-
-
-    // If any selection placed before (after) the beginning (end), invalid range
-    if((selectedStart < dataBegin) || (selectedStart > dataEnd) || (selectedEnd < dataBegin) || (selectedEnd > dataEnd))
-    {
-        QMessageBox::warning(this, "Invalid Date Range", "Selected date out of bounds of data. Please see available dates below.");
-        return;
-    }
-    // If selected start is after selected end in time, invalid range
-    if(selectedStart > selectedEnd)
-    {
-        QMessageBox::warning(this, "Invalid Date Range", "Start date greater than end date.");
-        return;
-    }
-
-    // Else, we may proceed to plot the data
-
-    // First fine the indices of the selected dates to create a subset of the data
-    int startIndex = 0;
-    int endIndex = myData.size() - 1;
-    for(unsigned int i = 0; i < myData.size(); i++)
-    {
-        if(myData.at(i).date == selectedStart)
-            startIndex = i;
-        if(myData.at(i).date == selectedEnd)
-           endIndex = i;
-    }
-    // Now create a subsetted vector
-    std::vector<reading> subset(myData.begin() + startIndex, myData.begin() + endIndex + 1);
+    // Get the data subset
+    std::vector<reading>& subset = currentCitySubset;
 
     // Now treat the data to get it ready to plot. Must turn dates into indices--the x-axis, and set temp to y axis
     QVector<double> x(subset.size());
@@ -343,43 +242,11 @@ void MainWindow::on_pushButtonFit_clicked()
     }
 
     // Given now, the x and y, perform linear regression
-
-    // XY term
-    std::pair<double, int> pairedXY = Series::sumSeriesProduct(x, y);
-     double sumXY = pairedXY.first;
-    int N = pairedXY.second;
-
-
-    // X and Y (Parameters: data, squareTerm, squareResult)
-    double sumX = Series::sumSeries(x, false, false);
-    double sumY = Series::sumSeries(y, false, false);
-
-    // sum(X^2) and sum(X)^2
-    double sumX_TermsSquared = Series::sumSeries(x, true, false);
-    double sumX_ResultSquared = Series::sumSeries(x, false, true);
-
-    double numerator = N*sumXY - sumX * sumY;
-    double denominator = N*sumX_TermsSquared - sumX_ResultSquared;
-
-    double m = numerator / denominator;
-    double b = (sumY - m * sumX) / N;
-
-    // Create regression line
-    QVector<double> xReg = Series::removeNulls(x, y);
-    QVector<double> yReg(N);
-
-
-//    qDebug() <<"N: "<< N << " X size: " << xReg.size() << Qt::endl;
-//    qDebug() <<"sub.size(): "<< subset.size() << " PairedResult: " << pairedXY.second << Qt::endl;
-//    for(int i = 0; i < xReg.size(); i++)
-//    {
-//        qDebug() << y[xReg[i]] << " ";
-//    }
-
-    for(int i = 0; i < xReg.size(); i++)
-    {
-        yReg[i] = m*xReg[i] + b;
-    }
+    std::tuple<QVector<double>, QVector<double>, double, double> results = Series::regress(x, y);
+    QVector<double>& xReg = std::get<0>(results);
+    QVector<double>& yReg = std::get<1>(results);
+    double m = std::get<2>(results);
+    double b = std::get<3>(results);
 
     // Get plot variable
     auto& myPlot = ui->customPlot;
@@ -409,15 +276,13 @@ void MainWindow::on_pushButtonFit_clicked()
     ui->labelM->setText("m: " + mStr + " °F / day");
     ui->labelB->setText("b: " + bStr + " °F");
 
-
     fitMade = true;
-
-
 }
 
 void MainWindow::on_pushButtonExtremeUpdate_clicked()
 {
     QString numDaysStr = ui->lineEditNumDaysExtreme->text();
+
 
     // Pass into string conversion. Turns it to false if failed
     bool ok;
@@ -429,10 +294,47 @@ void MainWindow::on_pushButtonExtremeUpdate_clicked()
         QMessageBox::warning(this, "Invalid Argument", "Number of days must be an integer.");
         return;
     }
+    else if(numDays < 0)
+    {
+        QMessageBox::warning(this, "Invalid Argument", "Number of days must be greater than or equal to 0.");
+        return;
+    }
 
-    // Proceed with adding to list if valid
+    // Check if numDays selected greater than available
+
+        // Remove nulls
+    std::vector<reading> pure;
+    for(unsigned int i = 0; i < currentCityData.size(); i++)
+    {
+        if(currentCityData.at(i).temperature == -99)
+            continue;
+        pure.push_back(currentCityData.at(i));
+    }
+        // See if numDays > non-null data
+    int size = pure.size();
+    if(numDays > size)
+    {
+        QMessageBox::warning(this, "Out of Bounds", "Number of days larger than available data. Select bigger range or decrease number of days.");
+        return;
+    }
 
 
+    // If valid also clear the current list
+    ui->listExtremes->clear();
+
+    // Proceed with adding to list
+    for(int i = 0; i < numDays; i++)
+    {
+        double temp = currentCityData.at(i).temperature;
+        if(temp == -99)
+        {
+            i--;
+            continue;
+        }
+        QDate date = currentCityData.at(i).date;
+        QString format = QString::number(temp) + "\t" + date.toString("M/d/yyyy");
+        ui->listExtremes->addItem(format);
+    }
 
 }
 

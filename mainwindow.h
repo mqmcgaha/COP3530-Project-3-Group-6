@@ -47,6 +47,7 @@ private:
 
     // City data (plotting time)
     std::vector<reading> currentCityData;
+    std::vector<reading> currentCitySubset;
 
     // Plotting logic helpers
     bool fitMade;

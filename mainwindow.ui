@@ -218,16 +218,6 @@
      </property>
     </widget>
    </widget>
-   <widget class="QListView" name="listExtremes">
-    <property name="geometry">
-     <rect>
-      <x>780</x>
-      <y>90</y>
-      <width>231</width>
-      <height>311</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QLabel" name="labelExtremes">
     <property name="geometry">
      <rect>
@@ -301,6 +291,16 @@
     </property>
     <property name="text">
      <string>Update</string>
+    </property>
+   </widget>
+   <widget class="QListWidget" name="listExtremes">
+    <property name="geometry">
+     <rect>
+      <x>770</x>
+      <y>90</y>
+      <width>251</width>
+      <height>301</height>
+     </rect>
     </property>
    </widget>
   </widget>
