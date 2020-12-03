@@ -6,6 +6,6 @@ Nothing yet, check the to-do.
 
 
 To-do:
-- Implement heap sort and merge sort for data vectors. This will be used for getting the n hottest/coldest days.
-- Provide functionality for the n hottest/coldest days function in the GUI.
 - Make the GUI pretty (colors, icons, different fonts, etc.)
+- Perhaps provide a more accurate timer
+- Make a better read-me. Include citations, where we got some files, Qt, etc.
