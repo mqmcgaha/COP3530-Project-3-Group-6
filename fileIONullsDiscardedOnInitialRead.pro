@@ -14,6 +14,8 @@ SOURCES += \
     qcustomplot.cpp
 
 HEADERS += \
+    Heap.h \
+    Merge.h \
     Series.h \
     mainwindow.h \
     qcustomplot.h \

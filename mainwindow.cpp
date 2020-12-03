@@ -16,12 +16,17 @@
 // Custom classes
 #include "Series.h"
 #include "reading.h"
+#include "Heap.h"
+#include "Merge.h"
+
+// Timing
+#include <QElapsedTimer>
 
 void MainWindow::read()
 {
     std::ifstream file("../fileIONullsDiscardedOnInitialRead/NewData.csv");
 
-     std::string line;
+    std::string line;
 
     if(file.is_open())
     {
@@ -34,8 +39,6 @@ void MainWindow::read()
               QString state = QString::fromStdString(line);
               state.remove(0, 1);
               state.remove(state.length() - 1, 1);
-
-              //ui->stateBox->addItem(state);
 
               getline(hold, line, ',');
               QString city = QString::fromStdString(line);
@@ -57,9 +60,7 @@ void MainWindow::read()
               mapper[state].insert(city);
               statecityToData[std::make_pair(state, city)].push_back(reading(temp, QDate(year, month, day)));
          }
-
     }
-
 }
 
 MainWindow::MainWindow(QWidget *parent)
@@ -67,7 +68,6 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-
 
     // Read data
     read();
@@ -83,7 +83,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Set up the extreme box
     ui->lineEditNumDaysExtreme->setText("5");
-    ui->radioButtonColdest->setChecked(true);
+    ui->radioButtonHottest->setChecked(true);
+    ui->radioButtonHeap->setChecked(true);
 
     // Set up bools
     fitMade = false;
@@ -94,7 +95,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Initial Y axis
     ui->customPlot->yAxis->setRange(-50.0, 150.0);
-
 }
 
 MainWindow::~MainWindow()
@@ -119,6 +119,7 @@ void MainWindow::on_cityBox_currentTextChanged(const QString &city)
     // With the city, must change the available dates
     QString state = ui->stateBox->currentText();
     currentCityData = statecityToData[std::make_pair(state, city)];
+
     if(currentCityData.size() == 0)
     {
         ui->labelStartTime->setText("First available: ");
@@ -126,19 +127,21 @@ void MainWindow::on_cityBox_currentTextChanged(const QString &city)
          return;
     }
 
-
    QDate start = currentCityData.front().date;
    QDate end = currentCityData.back().date;
 
+   // Show availabilities and also set default entries to this
    QString dateString = start.toString("M/d/yyyy");
    ui->labelStartTime->setText("First available: " + dateString);
 
    QString dateString2 = end.toString("M/d/yyyy");
    ui->labelEndTime->setText("Last available: " + dateString2);
 
+   ui->dateEditFrom->setDate(start);
+   ui->dateEditTo->setDate(end);
+
    // Disable fitting
    ui->pushButtonFit->setEnabled(false);
-
 }
 
 void MainWindow::on_pushButtonPlot_clicked()
@@ -194,7 +197,6 @@ void MainWindow::on_pushButtonPlot_clicked()
     {
         x[i] = i;
         y[i] = subset.at(i).temperature;
-
     }
 
     // Get plot variable
@@ -238,7 +240,6 @@ void MainWindow::on_pushButtonFit_clicked()
     {
         x[i] = i;
         y[i] = subset.at(i).temperature;
-
     }
 
     // Given now, the x and y, perform linear regression
@@ -262,7 +263,6 @@ void MainWindow::on_pushButtonFit_clicked()
     myPlot->yAxis->setRange(-50.0, 150.0);
 
     // Color the line
-
     QPen pen;
     pen.setColor(Qt::red);
     pen.setWidth(2);
@@ -282,7 +282,6 @@ void MainWindow::on_pushButtonFit_clicked()
 void MainWindow::on_pushButtonExtremeUpdate_clicked()
 {
     QString numDaysStr = ui->lineEditNumDaysExtreme->text();
-
 
     // Pass into string conversion. Turns it to false if failed
     bool ok;
@@ -304,11 +303,11 @@ void MainWindow::on_pushButtonExtremeUpdate_clicked()
 
         // Remove nulls
     std::vector<reading> pure;
-    for(unsigned int i = 0; i < currentCityData.size(); i++)
+    for(unsigned int i = 0; i < currentCitySubset.size(); i++)
     {
-        if(currentCityData.at(i).temperature == -99)
+        if(currentCitySubset.at(i).temperature == -99)
             continue;
-        pure.push_back(currentCityData.at(i));
+        pure.push_back(currentCitySubset.at(i));
     }
         // See if numDays > non-null data
     int size = pure.size();
@@ -318,34 +317,66 @@ void MainWindow::on_pushButtonExtremeUpdate_clicked()
         return;
     }
 
-
     // If valid also clear the current list
     ui->listExtremes->clear();
 
+    // Get the sorted vector
+    std::vector<reading> copy = currentCitySubset;
+    QElapsedTimer timer;
+    int elapsedMs = 0;
+
+        // Check if hot or cold is selected
+        if(ui->radioButtonHottest->isChecked())
+        {
+            // If heap or merge
+            if(ui->radioButtonHeap->isChecked())
+            {
+                timer.start();
+                copy = Heap::heapHottest(copy, numDays);
+                elapsedMs = timer.elapsed();
+            }
+            else if(ui->radioButtonMerge->isChecked())
+            {
+                timer.start();
+                copy = Merge::mergeHottest(copy, numDays);
+                elapsedMs = timer.elapsed();
+            }
+        }
+        else if(ui->radioButtonColdest->isChecked())
+        {
+            // If heap or merge
+            if(ui->radioButtonHeap->isChecked())
+            {
+                timer.start();
+                copy = Heap::heapColdest(copy, numDays);
+                elapsedMs = timer.elapsed();
+            }
+            else if(ui->radioButtonMerge->isChecked())
+            {
+                timer.start();
+                copy = Merge::mergeColdest(copy, numDays);
+                elapsedMs = timer.elapsed();
+            }
+        }
+
+    // Set timer text
+    ui->labelTimeResult->setText(QString::number(elapsedMs));
     // Proceed with adding to list
     for(int i = 0; i < numDays; i++)
     {
-        double temp = currentCityData.at(i).temperature;
-        if(temp == -99)
-        {
-            i--;
-            continue;
-        }
-        QDate date = currentCityData.at(i).date;
+        double temp = copy.at(i).temperature;
+        QDate date = copy.at(i).date;
         QString format = QString::number(temp) + "\t" + date.toString("M/d/yyyy");
         ui->listExtremes->addItem(format);
     }
-
 }
 
 void MainWindow::on_dateEditFrom_userDateChanged(const QDate &date)
 {
     ui->pushButtonFit->setEnabled(false);
-
 }
 
 void MainWindow::on_dateEditTo_userDateChanged(const QDate &date)
 {
     ui->pushButtonFit->setEnabled(false);
-
 }

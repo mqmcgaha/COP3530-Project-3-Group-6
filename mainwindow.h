@@ -26,6 +26,7 @@ public:
 
 private slots:
     void on_stateBox_currentTextChanged(const QString &state);
+
     void on_pushButtonPlot_clicked();
 
     void on_cityBox_currentTextChanged(const QString &city);

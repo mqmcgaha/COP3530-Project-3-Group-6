@@ -10,7 +10,7 @@ struct Series
         double sum = 0;
         for (int i = 0; i < first.size(); i++)
         {
-            qDebug() << "Current value: " << first[i] << Qt::endl;
+            //qDebug() << "Current value: " << first[i] << Qt::endl;
 
             // X will never go negative, so this accounts for whether x or y should be summed correctly.
             if(first[i] == -99 || second[i] == -99)
@@ -94,24 +94,24 @@ struct Series
     //        qDebug() << y[xReg[i]] << " ";
     //    }
 
-        qDebug() << "xReg contents:\n";
+        //qDebug() << "xReg contents:\n";
+
         for(int i = 0; i < xReg.size(); i++)
-        {
             yReg[i] = m*xReg[i] + b;
-        }
-        for(int i = 0; i < xReg.size(); i++)
-        {
-            qDebug() <<yReg[i] << " ";
-        }
 
-        qDebug() << "N: " << N <<  Qt::endl;
-        qDebug() << "sumX: " << sumX << Qt::endl;
-         qDebug() << "sumY: " << sumY << Qt::endl;
-         qDebug() << "sumX_termssquared :" << sumX_TermsSquared << Qt::endl;
-         qDebug() << "sumX_ResultSquared :" << sumX_ResultSquared << Qt::endl;
+//        for(int i = 0; i < xReg.size(); i++)
+//        {
+//            qDebug() <<yReg[i] << " ";
+//        }
+
+//        qDebug() << "N: " << N <<  Qt::endl;
+//        qDebug() << "sumX: " << sumX << Qt::endl;
+//         qDebug() << "sumY: " << sumY << Qt::endl;
+//         qDebug() << "sumX_termssquared :" << sumX_TermsSquared << Qt::endl;
+//         qDebug() << "sumX_ResultSquared :" << sumX_ResultSquared << Qt::endl;
 
 
-        qDebug() << Qt::endl;
+//        qDebug() << Qt::endl;
 
         return std::make_tuple(xReg, yReg, m, b);
     }
