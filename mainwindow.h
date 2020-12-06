@@ -39,6 +39,8 @@ private slots:
 
     void on_dateEditTo_userDateChanged(const QDate &date);
 
+    void on_actionAbout_Qt_triggered();
+
 private:
     Ui::MainWindow *ui;
 

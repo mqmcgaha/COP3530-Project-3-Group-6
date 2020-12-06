@@ -24,7 +24,7 @@
 
 void MainWindow::read()
 {
-    std::ifstream file("../fileIONullsDiscardedOnInitialRead/NewData.csv");
+    std::ifstream file("../WeatherTool/NewData.csv");
 
     std::string line;
 
@@ -379,4 +379,9 @@ void MainWindow::on_dateEditFrom_userDateChanged(const QDate &date)
 void MainWindow::on_dateEditTo_userDateChanged(const QDate &date)
 {
     ui->pushButtonFit->setEnabled(false);
+}
+
+void MainWindow::on_actionAbout_Qt_triggered()
+{
+    QMessageBox::aboutQt(this, "About Qt");
 }
